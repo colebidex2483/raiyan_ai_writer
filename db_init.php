@@ -3,7 +3,7 @@ $host = "127.0.0.1"; // Change to "localhost" if needed
 $dbname = "chat_db";
 $port = 3306; // Default MySQL port
 $dbUser = "root"; 
-$dbPass = "password";
+$dbPass = "";
 
 $dsn = "mysql:host=$host;dbname=$dbname;port=$port;charset=utf8mb4";
 
@@ -13,7 +13,7 @@ try {
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false
     ]);
-    echo "Database connected successfully!";
+    // echo "Database connected successfully!";
 } catch (PDOException $e) {
     die("Database connection failed: " . $e->getMessage());
 }
