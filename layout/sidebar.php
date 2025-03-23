@@ -61,8 +61,8 @@ $currentPage = basename($_SERVER['PHP_SELF']); // Get the current page name
                 <span class="sidebar-text">Blog Wizard</span>
                 <i class="fas sidebar-text fa-chevron-down ml-auto"></i>
             </button>
-            <div id="submenu1" class="sidebar-text-hidden w-[100%] submenu hidden flexT flex-col pl-4 mt-2">
-                <a href="guidedArticle.php" class="dark:text-gray-700 dark:hover:bg-cyan-100 dark:hover:bg-opacity-10 dark:hover:text-gray-500 submenu-link text-gray-400 hover:text-white <?= $currentPage == 'guidedArticle.php' ? 'active' : '' ?>">
+            <div id="submenu1" class="sidebar-text-hidden w-[100%] submenu hidden flex flex-col pl-4 mt-2">
+                <a href="guidedArticle.php" class="dark:text-gray-700 dark:hover:bg-cyan-100 mb-2 dark:hover:bg-opacity-10 dark:hover:text-gray-500 submenu-link text-gray-400 hover:text-white <?= $currentPage == 'guidedArticle.php' ? 'active' : '' ?>">
                     <span>Guided Content Creation
                     </span>
                 </a>

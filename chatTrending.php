@@ -11,10 +11,10 @@ $dotenv->load();
 $yourApiKey = $_ENV['QWEN_API'];
 
 // Check if the user is logged in
-if (!isset($_SESSION['google_loggedin'])) {
-    header('Location: login.php');
-    exit;
-}
+// if (!isset($_SESSION['google_loggedin'])) {
+//     header('Location: login.php');
+//     exit;
+// }
 
 try {
     $pdo = new PDO($dsn, $dbUser, $dbPass, [
@@ -87,66 +87,126 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['query'])) {
 <?php $pageTitle = "chat Trending Topic"; ?>
 <?php require_once 'layout/header.php'; ?>
 
-    <!-- Sidebar -->
-    <?php require_once 'layout/sidebar.php'; ?>
+<!-- Sidebar -->
+<?php require_once 'layout/sidebar.php'; ?>
 
-  <div id="mainContent" class="main-content h-screen md:p-4 overflow-hidden md:ml-64">
-     <!-- Header -->
-     <?php require_once 'layout/main-header.php'; ?> 
-    
-     <div class="flex flex-col glass-card pl-3 flex-1 h-screen">
-      <!-- Header -->
-      <div class="flex justify-between p-2 items-center border-b dark:border-none border-gray-700/50">
-        <!-- Toggle Button for Mobile -->
-        <button id="sidebar-toggle" onclick="toggleChatSidebar()"
-          class="md:hidden bg-cyan-500/80 px-2 py-1 rounded-lg hover:bg-cyan-400/80 transition-all duration-300 glow">
-          <i class="fas fa-bars"></i>
-        </button>
-        <h1 class="text-2xl font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-          Trending Topic Finder
-        </h1>
-        <button class="bg-cyan-500/80 px-4 py-2 dark:text-white rounded-lg hover:bg-cyan-400/80 transition-all duration-300 glow">
-          New Search
-        </button>
-      </div>
-      <div class="flex flex-1 gap-2">
-        <!-- Main Chat Section (60% width) -->
-        <main class="md:w-1/3 bg-gray-800 dark:bg-white flex flex-col rounded border-gray-700 dark:border-gray-700 p-3 h-[80%] relative mb-10">
-          <!-- Fixed Search Bar with AI Input -->
-          <div class="sticky top-0 bg-gray-800/70 dark:bg-white backdrop-blur-md z-10 p-2">
-            <form method="POST" action="">
-              <input type="text" name="query" placeholder="Ask about trending topics..."
-                class="w-full p-2 rounded-lg bg-gray-700/50 dark:text-black dark:bg-white dark:border-black text-white border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-black transition-all duration-300">
-            </form>
-          </div>
-          <!-- Display AI Response -->
-          <?php if (!empty($aiResponse)): ?>
-            <div class="mt-4 p-4 bg-gray-700/50 rounded-lg">
-              <p class="text-white"><?php echo htmlspecialchars($aiResponse); ?></p>
-            </div>
-          <?php endif; ?>
-        </main>
-        <!-- Sidebar (40% width) -->
-        <aside id="chatSidebar" class="chatSidebar flex-1 border-l bg-gray-800 dark:bg-white md:relative border-r hidden rounded border-gray-700 backdrop-blur-md p-4 md:flex h-[80%] flex-col">
-          <!-- Additional content can go here -->
-        </aside>
-      </div>
+<div id="mainContent" class="main-content h-screen md:p-4 overflow-hidden md:ml-64">
+    <!-- Header -->
+    <?php require_once 'layout/main-header.php'; ?> 
+
+    <div class="flex flex-col glass-card pl-3 flex-1 h-screen">
+
+        <!-- Header -->
+        <div class="flex justify-between p-2 items-center border-b dark:border-none border-gray-700/50">
+            <button id="sidebar-toggle" onclick="toggleChatSidebar()"
+                class="md:hidden bg-cyan-500/80 px-2 py-1 rounded-lg hover:bg-cyan-400/80 transition-all duration-300 glow">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="text-2xl font-semibold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                Trending Topic Finder </h1>
+            <button onclick="fetchTrendingTopics()"
+                class="bg-cyan-500/80 px-4 py-2 dark:text-white rounded-lg hover:bg-cyan-400/80 transition-all duration-300 glow">New
+                Search</button>
+        </div>
+
+        <div class="flex flex-col md:flex-row flex-1 gap-2">
+
+            <!-- Sidebar (40% width) -->
+            <aside class="md:w-1/3 bg-gray-800 dark:bg-white relative rounded border-gray-700 py-4 px-1 flex md:h-[80%] min-h-72 flex-col">
+              
+                <div class="sticky bottom-0 flex items-center gap-x-2">
+                    <form method="POST" action="" class="w-full flex gap-x-2">
+                        <input type="text" id="topic-input" name="query" placeholder="Enter keyword..."
+                            class="md:w-[80%] w-[82%] min-h-[3rem] dark:text-gray-600 p-3 rounded-xl bg-transparent text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-400 transition-all duration-300 placeholder:text-gray-400"/>
+                        <button type="submit" id="send-button"
+                            class="relative flex items-center cursor-pointer justify-center w-12 h-12 rounded-full bg-gradient-to-r from-cyan-400 to-blue-600 hover:from-cyan-300 hover:to-blue-500 hover:shadow-cyan-400/60 hover:scale-110 transition-all duration-300">
+                            <i class="fas fa-search text-white text-xl"></i>
+                        </button>
+                    </form>
+                </div>
+                  <div id="chat-content" class="flex-1 overflow-y-auto scrollbar-thin py-4 space-y-4" style="max-height: calc(100vh - 250px);">
+                    <?php
+                    // Fetch chat messages from the database
+                    $stmt = $pdo->prepare("SELECT * FROM chat_messages WHERE session_id = :session_id AND conversation_id = :conversation_id ORDER BY created_at ASC");
+                    $stmt->execute([
+                        ':session_id' => session_id(),
+                        ':conversation_id' => $conversationId
+                    ]);
+                    $messages = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    foreach ($messages as $message) {
+                        $role = $message['role'];
+                        $content = $message['content'];
+                        $bgColor = $role === 'user' ? 'bg-gray-700/50' : 'bg-cyan-500/50';
+                        $textColor = $role === 'user' ? 'text-white' : 'text-white';
+                        $align = $role === 'user' ? 'self-start' : 'self-end';
+                        echo "<div class='p-2 $bgColor $textColor backdrop-blur-md rounded-lg shadow-lg $align break-words'>
+                                <p>$content</p>
+                              </div>";
+                    }
+                    ?>
+                </div>
+            </aside>
+
+            <!-- Main Section (60% width) -->
+            <main class="flex-1 bg-gray-800 dark:bg-white flex flex-col rounded overflow-hidden border-gray-700 p-3 h-[80%] relative mb-10">
+                <div id="quick-start-cards" class="flex-1 overflow-y-auto mt-2 pb-2 md:pb-0 scrollbar-thin" style="max-height: calc(100vh - 250px);">
+                    <div id="trending-topics" class="grid grid-cols-1 gap-6 px-2">
+                        <?php
+                        // Display the AI's response in the main section
+                        if (!empty($aiResponse)) {
+                            echo "<div class='p-3 bg-gray-700/50 dark:bg-gray-800/50 text-white rounded-lg shadow-md'>
+                                    <h3 class='font-semibold'>AI Response</h3>
+                                    <p>$aiResponse</p>
+                                  </div>";
+                        } else {
+                            echo "<div class='p-3 bg-gray-700/50 dark:bg-gray-800/50 text-white rounded-lg shadow-md'>
+                                    <h3 class='font-semibold'>No Response Yet</h3>
+                                    <p>Enter a query to get started.</p>
+                                  </div>";
+                        }
+                        ?>
+                    </div>
+                </div>
+            </main>
+        </div>
     </div>
-  </div>
-  <script src="scripts/script.js"></script>
-  <script>
-    // Toggle sidebar for mobile
-    function toggleChatSidebar() {
-      const sidebar = document.getElementById('chatSidebar');
-      if (sidebar.classList.contains('w-0')) {
-        sidebar.classList.remove('w-0');
-        sidebar.classList.add('w-3/4');
-      } else {
-        sidebar.classList.remove('w-3/4');
-        sidebar.classList.add('w-0');
-      }
+</div>
+<script>
+    function handleKeyPress(event) {
+    if (event.key === "Enter") {
+        event.preventDefault(); // Prevents form submission (if inside a form)
+        generateTopics();
     }
-  </script>
+}
+    async function fetchTrendingTopics() {
+        document.getElementById("trending-topics").innerHTML = "Loading trending topics...";
+        try {
+            let response = await fetch('fetch_trending_topics.php'); // PHP script to fetch topics
+            let data = await response.json();
+            displayTrendingTopics(data);
+        } catch (error) {
+            console.error("Error fetching topics:", error);
+        }
+    }
+    
+    function generateTopics() {
+        let keyword = document.getElementById("topic-input").value;
+        if (!keyword.trim()) return;
+        fetchTrendingTopics();
+    }
+
+    function displayTrendingTopics(topics) {
+        let container = document.getElementById("trending-topics");
+        container.innerHTML = "";
+        topics.forEach(topic => {
+            let div = document.createElement("div");
+            div.className = "p-3 bg-gray-700/50 dark:bg-gray-800/50 text-white rounded-lg shadow-md";
+            div.innerHTML = `<h3 class='font-semibold'>${topic.title}</h3><p>${topic.description}</p>`;
+            container.appendChild(div);
+        });
+    }
+</script>
+<script src="scripts/script.js"></script>
 </body>
 </html>
-<?php// require_once 'layout/footer.php'; ?>
